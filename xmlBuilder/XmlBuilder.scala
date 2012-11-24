@@ -9,12 +9,8 @@ object XmlBuilder {
     def xml_impl(c: Context)(block: c.Expr[Any]): c.Expr[String] = {
         import c.universe._
         
-        println("-----------------------------------------------------------------------------------------------------------")
-        //println(showRaw(block.tree))
-        
         def evalNext(next: c.Tree): c.Expr[String] = xml_impl(c)(c.Expr(next))
-        def tag(tagName: String, next: c.Tree): c.Expr[String] = {
-            println("------------------"+showRaw(next))
+        def tag(tagName: String, next: c.Tree): c.Expr[String] = 
             c.Expr[String](
                 Apply(
                     Select(
@@ -23,13 +19,13 @@ object XmlBuilder {
                                 Literal(Constant("<" + tagName + ">")),
                                 newTermName("$plus")
                             ),
-                            List(evalNext(next).tree)
+                            List(next)
                         ),
                         newTermName("$plus")
                     ),
                     List(Literal(Constant("</" + tagName + ">")))
                 )
-            )}
+            )
         
         def tagE(tagName: String, next: c.Tree): c.Expr[String] = 
             c.Expr[String](
@@ -40,7 +36,7 @@ object XmlBuilder {
                                 Literal(Constant("<" + tagName + ">")),
                                 newTermName("$plus")
                             ),
-                            List(next)
+                            List(evalNext(next).tree)
                         ),
                         newTermName("$plus")
                     ),
@@ -65,14 +61,15 @@ object XmlBuilder {
                 )
             )
         
-        val ast_symbolToFunction = Select(Select(Ident("xmlbuilder"), "XmlBuilder"), "symbolToTag5")
-        val ast_tupleToFunction = Select(Select(Ident("xmlbuilder"), "XmlBuilder"), "symbolToTag5")
+        val ast_symbolToFunction = Select(Select(Ident("xmlbuilder"), "XmlBuilder"), newTypeName("symbolToFunction"))
+        val ast_tupleToFunction = Select(Select(Ident("xmlbuilder"), "XmlBuilder"), newTypeName("tupleToFunction"))
         val ast_apply = newTermName("apply")
-        val ast_symbolApply = Select(Select(Ident("scala"), "Symbol"),  ast_apply)
+        val ast_symbolApply = Select(Select(Ident("scala"), newTypeName("Symbol")),  ast_apply)
+        val ast_listApply = TypeApply(Select(Select(This(newTypeName("immutable")), "List"), ast_apply), List(TypeTree()))
         
         block.tree match {
             case Literal(Constant(content: String)) => c.Expr[String](Literal(Constant(content)))
-            case Block(Literal(Constant(content: String))) => c.Expr[String](Literal(Constant(content)))              // Tjek mig sener
+            case Block(Literal(Constant(content: String))) => c.Expr[String](Literal(Constant(content)))              // Look at me later
             case Apply(
                         Select(
                             Apply(
@@ -87,7 +84,7 @@ object XmlBuilder {
                             ast_apply
                         ),
                         List(next)
-                    ) => tag(tagName, next)
+                    ) => reify(tagE(tagName, next).splice)
             case Block(
                         List(
                             Apply(
@@ -105,9 +102,14 @@ object XmlBuilder {
                                 ),
                                 List(next)
                             ),
-                            _*
+                            n2 @ _*
                         ),
-                    _) => tag(tagName, next)
+                    n3 @ _) => {
+                                    val tag = tagE(tagName, next)
+                                    val nextNext = n2.toList ::: List(n3)
+                                    val evalN = if (nextNext.isEmpty) reify("") else evalNext(Block(nextNext : _*))
+                                    reify(tag.splice + evalN.splice)
+                                }
             case Block(
                         List(
                             Apply(
@@ -116,9 +118,23 @@ object XmlBuilder {
                             ),
                             tmp @ _*
                         ),
-                        next2) => {println("3333"+showRaw(tmp.toList ::: List(next2))); tmp.toList ::: List(next2) match {
+                        next2) => tmp.toList ::: List(next2) match {
+                                            case next @ List(
+                                                Apply(
+                                                    ast_symbolApply,
+                                                    List(Literal(Constant(_: String)))
+                                                ),
+                                                _*
+                                            ) => {
+                                                val tag = tagC(tagName, "")
+                                                val evalN = if (next.isEmpty) reify("") else evalNext(Block(next.toList : _*))
+                                                reify(tag.splice + evalN.splice)
+                                            }
                                             case List(
-                                                // Tuple2(_, _),
+                                                list @ Apply(
+                                                    ast_listApply,
+                                                    List(_*)
+                                                ),
                                                 Literal(Constant(content: String)),
                                                 next @ _*
                                             ) => {
@@ -127,7 +143,6 @@ object XmlBuilder {
                                                 reify(tag.splice + evalN.splice)
                                             }
                                             case List(
-                                                List(_),
                                                 Literal(Constant(content: String)),
                                                 next @ _*
                                             ) => {
@@ -136,29 +151,35 @@ object XmlBuilder {
                                                 reify(tag.splice + evalN.splice)
                                             }
                                             case List(
-                                                Literal(Constant(content: String)),
+                                                Apply(
+                                                    Select(
+                                                        Apply(
+                                                            ast_tupleToFunction,
+                                                            List(tuple2)
+                                                        ),
+                                                        ast_apply
+                                                    ),
+                                                    List(content)
+                                                ),
                                                 next @ _*
                                             ) => {
-                                                val tag = tagC(tagName, content)
+                                                val tagT = tag(tagName, content)
                                                 val evalN = if (next.isEmpty) reify("") else evalNext(Block(next.toList : _*))
-                                                reify(tag.splice + evalN.splice)
+                                                reify(tagT.splice + evalN.splice)
                                             }
                                             case List(
                                                 content,
                                                 next @ _*
                                             ) => {
-                                                println("44444"+showRaw(content))
-                                                val tag = tagE(tagName, content)
+                                                val tagT = tag(tagName, content)
                                                 val evalN = if (next.isEmpty) reify("") else evalNext(Block(next.toList : _*))
-                                                reify(tag.splice + evalN.splice)
+                                                reify(tagT.splice + evalN.splice)
                                             }
-                                            case content @ _ => c.Expr[String](Literal(Constant("Nope2" + showRaw(content))))
-                                        }}
-            case content @ _ => c.Expr[String](Literal(Constant("Nope" + showRaw(content))))
+                                            case content @ _ => c.Expr[String](Literal(Constant("---***---" + showRaw(content))))
+                                        }
+            case content @ _ => c.Expr[String](Literal(Constant("---*---" + showRaw(content))))
         }
     }
-    
-    def makeArgs(args: Seq[(String, Any)]): String = args.foldLeft("")((acc, i) => acc + " " + i._1 + "=\"" + i._2 + "\"")
     
     implicit def symbolToFunction(s: Symbol): Function1[Any, Any] = (t: Any) => t
     implicit def tupleToFunction(t: Tuple2[Any, Any]): Function1[Any, Any] = (b: Any) => b
