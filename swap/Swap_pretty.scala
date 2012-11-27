@@ -4,9 +4,10 @@ import scala.language.experimental.macros
 import scala.reflect.macros.Context
 
 object Swap {
-    def swap[T](a: T, b: T): Unit = macro swap_impl[T]
     
-    def swap_impl[T](c: Context)(a: c.Expr[T], b: c.Expr[T]): c.Expr[Unit] = {
+    def swapL(a: => Any, b: Any): Unit = macro swapL_impl
+    
+    def swapL_impl(c: Context)(a: c.Expr[Any], b: c.Expr[Any]): c.Expr[Unit] = {
         import c.universe._
         
         val (obj, tmpA, tmpB, indexA, indexB) = a.tree match {
@@ -78,6 +79,59 @@ object Swap {
                             )
                         )
                     )
+                )
+            )
+    }
+    
+    def swapA(a: => Any, b: Any): Unit = macro swapA_impl
+    
+    def swapA_impl(c: Context)(a: c.Expr[Any], b: c.Expr[Any]): c.Expr[Unit] = {
+        import c.universe._
+        
+        val (obj, tmpA, tmpB, indexA, indexB) = a.tree match {
+            case Apply(Select(tmpObj1, _), List(Literal(Constant(tmpIndex1: Int)))) => b.tree match {
+                    case Apply(Select(tmpObj2, _), List(Literal(Constant(tmpIndex2: Int)))) => 
+                        if (tmpIndex1 < tmpIndex2)
+                            (tmpObj1, a, b, tmpIndex1, tmpIndex2)
+                        else
+                            (tmpObj1, b, a, tmpIndex2, tmpIndex1)
+                }
+            }
+        
+        if (indexA == indexB)
+            c.Expr[Unit](Literal(Constant(())))
+        else
+            c.Expr[Unit](
+                Block(
+                    List(
+                        ValDef(
+                            Modifiers(), 
+                            newTermName("tmp"), 
+                            TypeTree(), 
+                            tmpA.tree
+                        ), 
+                        Apply(
+                            Select(
+                                obj, 
+                                newTermName("update")
+                            ), 
+                            List(
+                                Literal(Constant(indexA)), 
+                                tmpB.tree
+                            )
+                        ),
+                        Apply(
+                            Select(
+                                obj, 
+                                newTermName("update")
+                            ), 
+                            List(
+                                Literal(Constant(indexB)), 
+                                Ident(newTermName("tmp"))
+                            )
+                        )
+                    ), 
+                    Literal(Constant(()))
                 )
             )
     }
