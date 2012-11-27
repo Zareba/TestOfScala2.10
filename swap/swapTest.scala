@@ -17,7 +17,7 @@ object swapTest extends App {
     
     println(b.toList)
     
-    swapA(b(2), b(5))
+    swapA(b(5), b(2))
     
     println(b.toList)
 
