@@ -31,16 +31,11 @@ object Swap {
         import c.universe._
         
         val (obj, indexA, indexB) = a.tree match {
-            case Apply(Select(tmpObj1, _), List(Literal(Constant(tmpIndex1: Int)))) => b.tree match {
-                    case Apply(Select(tmpObj2, _), List(Literal(Constant(tmpIndex2: Int)))) => (tmpObj1, tmpIndex1, tmpIndex2)
+            case Apply(Select(tmpObj1, _), List(tmpIndex1)) => b.tree match {
+                    case Apply(Select(tmpObj2, _), List(tmpIndex2)) => (tmpObj1, tmpIndex1, tmpIndex2)
                 }
             }
         
-        c.Expr[Unit](
-            if (indexA == indexB)
-                Literal(Constant(()))
-            else            
-                Block(List(ValDef(Modifiers(), newTermName("tMp3424VaLUe"), TypeTree(), a.tree), Apply(Select(obj, newTermName("update")), List(Literal(Constant(indexA)), b.tree)),Apply(Select(obj, newTermName("update")), List(Literal(Constant(indexB)), Ident(newTermName("tMp3424VaLUe"))))), Literal(Constant(())))
-        )
+        c.Expr[Unit](Block(List(ValDef(Modifiers(), newTermName("tMp3424VaLUe"), TypeTree(), a.tree), Apply(Select(obj, newTermName("update")), List(indexA, b.tree)),Apply(Select(obj, newTermName("update")), List(indexB, Ident(newTermName("tMp3424VaLUe"))))), Literal(Constant(()))))
     }
 }

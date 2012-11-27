@@ -20,5 +20,11 @@ object swapTest extends App {
     swapA(b(5), b(2))
     
     println(b.toList)
-
+    
+    val d = 1
+    
+    swapA(b(d), b(5*2-7))
+    
+    println(b.toList)
+    
 }
