@@ -30,28 +30,30 @@ p.title {
 """
 
     println(xml {
-        'html {
-            'head {
-                'title
+        'html; {
+            'head; {
+                'title;
                 "Search Links - Build with Xml Builder in Scala"
-                'style
+                'style;
                 pageStyle
             }
-            'body {
-                'p
+            'body; {
+                'p;
                 List("class" -> "title", "style" -> "font-weight: 900;")
                 "Search Links:"
-                'br
-                'ul
-                ("id" -> "searchList")
+                'br;
+                ""
+                'ul;
+                "id" -> "ulSearchList";
                 {
-                    for ((name, link) <- searchLinks)
-                        'li {
-                            'a
-                            "href" -> link
+                    for ((name, link) <- searchLinks) yield {
+                        'li; {
+                            'a;
+                            "href" -> link;
                             name
                         }
-                }
+                    }
+                }.foldLeft("")(_ + _)
             }
         }
     })
