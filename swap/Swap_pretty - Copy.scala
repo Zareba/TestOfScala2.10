@@ -10,8 +10,6 @@ object Swap {
     def swapL_impl(c: Context)(a: c.Expr[Any], b: c.Expr[Any]): c.Expr[Unit] = {
         import c.universe._
         
-        
-        
         val (obj, tmpA, tmpB, indexA, indexB) = a.tree match {
             case Apply(Select(tmpObj1, _), List(Literal(Constant(tmpIndex1: Int)))) => b.tree match {
                     case Apply(Select(tmpObj2, _), List(Literal(Constant(tmpIndex2: Int)))) => 
