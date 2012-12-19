@@ -1,3 +1,4 @@
+import scala.language.implicitConversions
 
 class XmlStringInterpolation(str: StringContext) {
     
@@ -7,14 +8,17 @@ class XmlStringInterpolation(str: StringContext) {
         def apply(args: Any*): Seq[Node] = {
             str.checkLengths(args)
             
-            if (args.foldLeft(true)((acc, el) => acc && (el.isInstanceOf[List[Seq[Node]]] || el.isInstanceOf[Seq[Node]] || el.isInstanceOf[String]))) {
+            if (args.foldLeft(true)((acc, el) => acc && (el.isInstanceOf[String] || isInstanceOfSeqNodes(el)))) {
                 import scala.util.parsing.combinator._
                 
                 val sip = new StringInterpolationParsers
                 val result = sip.parseAll(
                     sip.tag,
                     str.parts.toArray,
-                    args.toArray
+                    args.map    {
+                        case str: String => Text(str)
+                        case sn => sn
+                    }.toArray
                 )
                 if (result.successful)
                     result.get
@@ -25,6 +29,21 @@ class XmlStringInterpolation(str: StringContext) {
         }
         
         //def unapplySeq(xml: Node): Option[Seq[Node]] = None
+        
+        def isInstanceOfSeqNodes(sn: Any): Boolean = {
+            if (sn.isInstanceOf[Seq[_]])
+                sn.asInstanceOf[Seq[_]].foldLeft(true)(
+                    (acc, el) =>
+                        acc && (
+                            if (el.isInstanceOf[Node])
+                                true
+                            else
+                                isInstanceOfSeqNodes(el)
+                        )
+                )
+            else
+                false
+        }
     }
 }
 

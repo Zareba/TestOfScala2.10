@@ -3,6 +3,7 @@ package scala.util.parsing.combinator
 import scala.util.matching.Regex
 
 trait CharAndExprEitherParsers[E] extends Parsers  {
+    import scala.language.implicitConversions
     import scala.util.parsing.input._
     
     type Elem = Either[Char, E]
@@ -20,23 +21,17 @@ trait CharAndExprEitherParsers[E] extends Parsers  {
         else
             offset
     
-    def EXPR_TYPE[T] = new Parser[T] {
+    def EXPR = new Parser[E] {
         def apply(in: Input) = {
             val (sSource, sOffset) = in.asInstanceOf[CharAndExprEitherReader[E]].subSourceAndSubOffset
             sSource match {
                 case Left(cSeq) => 
                     Failure("expr1` expected expr but " +  cSeq + " found", in.drop(cSeq.length))
-                case Right(ex: T) => 
-                    Success(ex, in.drop(1))
                 case Right(ex) => 
-                    Failure("expr2` expected expr of type T", in.drop(1))
+                    Success(ex, in.drop(1))
             }
         }
     }
-    
-    def EXPR = EXPR_TYPE[E]
-    
-    def EXPR_STR = EXPR_TYPE[String]
     
     implicit def literal(s: String): Parser[String] = new Parser[String] {
         def apply(in: Input) = {

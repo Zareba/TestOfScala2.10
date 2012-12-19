@@ -7,16 +7,14 @@ class StringInterpolationParsers extends CharAndExprEitherParsers[Any]  {
     
     val noDoubleQuote = """[^\"]+""".r
     
-    override def EXPR = EXPR_TYPE[Seq[Node]]
-    
     
     def tag: Parser[Seq[Node]] = tagName ~ opt(attrs) ~ opt(content) ^^ {
-        case nameStr ~ None ~ None => new nElem(null, nameStr, Null, TopScope)
+        case nameStr ~ None ~ None => new nElem(null, nameStr, Null, TopScope, true)
         case nameStr ~ Some(seqAttr) ~ None => 
-            seqAttr.foldLeft(new nElem(null, nameStr, Null, TopScope))(_ % _)
-        case nameStr ~ None ~ Some(cont) => new nElem(null, nameStr, Null, TopScope, cont: _*)
+            seqAttr.foldLeft(new nElem(null, nameStr, Null, TopScope, true))(_ % _)
+        case nameStr ~ None ~ Some(cont) => new nElem(null, nameStr, Null, TopScope, true, cont: _*)
         case nameStr ~ Some(seqAttr) ~ Some(cont) => 
-            seqAttr.foldLeft(new nElem(null, nameStr, Null, TopScope, cont: _*))(_ % _)
+            seqAttr.foldLeft(new nElem(null, nameStr, Null, TopScope, true, cont: _*))(_ % _)
     }
     
     def tagName: Parser[String] = string ^^ {
@@ -32,19 +30,19 @@ class StringInterpolationParsers extends CharAndExprEitherParsers[Any]  {
         case nameStr => new UnprefixedAttribute(nameStr.toString, Text(""), Null)
     }
     
-    def attrName: Parser[String] = string | EXPR_STR ^^ {
+    def attrName: Parser[String] = string | EXPR ^^ {
         case str => str.toString
     }
     
-    def attrValue: Parser[String] = "\"" ~> noDoubleQuote <~ "\"" | string | EXPR_STR ^^ {
+    def attrValue: Parser[String] = "\"" ~> noDoubleQuote <~ "\"" | string | EXPR ^^ {
         case str => str.toString
     }
     
-    def content: Parser[Seq[Node]] = "{" ~> rep("\"" ~> noDoubleQuote <~ "\"" | tag | EXPR_STR | EXPR) <~ "}" ^^ {
+    def content: Parser[Seq[Node]] = "{" ~> rep("\"" ~> noDoubleQuote <~ "\"" | tag | EXPR) <~ "}" ^^ {
         case lst => lst.map { el => 
             el match {
                 case str: String => Seq(Text(str))
-                case sn: Seq[Node] => sn
+                case sn: Seq[_] => sn map {case nd: Node => nd}
             }
         }.flatten.toSeq
     }
