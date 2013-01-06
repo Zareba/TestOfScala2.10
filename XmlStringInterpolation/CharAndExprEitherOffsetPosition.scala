@@ -5,7 +5,6 @@ case class CharAndExprEitherOffsetPosition[E](charSource: Array[java.lang.CharSe
     lazy val length: Int = charSource.foldLeft(0)(_+_.length) + eSource.length
     
     val (sectionVal: Int, sectionOffsetVal: Int, lineVal: Int, columnVal: Int) = {
-        if (offset < length) {
             var cur = 0
             var curL = 0
             var lineNr = 1
@@ -29,6 +28,7 @@ case class CharAndExprEitherOffsetPosition[E](charSource: Array[java.lang.CharSe
                     }
                     n = -1
                 } else if (n == curL) {
+                    for (i <- 0 until curL) if (cSource.charAt(i) == '\n') lineNr += 1
                     section = cur * 2 + 1
                     sectionOffset = 0
                     n = -1
@@ -39,9 +39,7 @@ case class CharAndExprEitherOffsetPosition[E](charSource: Array[java.lang.CharSe
                 }
             }
             (section, sectionOffset, lineNr, columnNr)
-        } else {
-            (-1, -1, -1, -1)
-        }
+        
     }
     
     def line: Int = lineVal
@@ -65,11 +63,11 @@ case class CharAndExprEitherOffsetPosition[E](charSource: Array[java.lang.CharSe
             }
             cs.subSequence(n0, n1).toString()
         } else {
-            "Error at Expr nr. " + (sectionVal / 2)
+            "Error at Expr nr. " + ((sectionVal + 1) / 2)
         }
     }
     
-    override def toString = lineVal+"."+columnVal+"-"+sectionVal+"."+sectionOffsetVal
+    override def toString = lineVal+"."+columnVal+"-"+(sectionVal+1)+"."+sectionOffsetVal
     
     override def <(that: Position) = that match {
         case CharAndExprEitherOffsetPosition(_, _, that_offset) =>

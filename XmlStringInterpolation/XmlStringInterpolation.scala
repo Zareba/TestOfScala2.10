@@ -20,6 +20,7 @@ class XmlStringInterpolation(str: StringContext) {
                         case sn => sn.asInstanceOf[Seq[Node]]
                     }})
                 )
+                
                 if (result.successful)
                     result.get
                 else {
@@ -100,10 +101,10 @@ p.title {
                 }}
             }
         }"""
-
-        
-        
-        
+    
+    
+    
+    
     if (xml.length == 1) {
         val pp = new scala.xml.PrettyPrinter(80, 2)
         println(pp.format(xml(0)))

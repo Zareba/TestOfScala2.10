@@ -14,7 +14,7 @@ class CharAndExprEitherReader[E](charSource: Array[java.lang.CharSequence], eSou
         var curL = 0
         var n = offset
         var either: Tuple2[Either[java.lang.CharSequence, E], Int] = (Left(charSource.last), charSource.last.length)
-        if (atEnd == false) {
+        if (!atEnd) {
             while (n >=0) {
                 curL = charSource(cur).length
                 if (n < curL) {either = (Left(charSource(cur)), n); n = -1}
@@ -30,7 +30,7 @@ class CharAndExprEitherReader[E](charSource: Array[java.lang.CharSequence], eSou
     
     def first: Either[Char, E] = {
         var either: Either[Char, E] = Left(EofCh)
-        if (atEnd == false) {
+        if (!atEnd) {
             val (sSource, sOffset) = subSourceAndSubOffset
             either = sSource match {
                 case Left(cSeq) => Left(cSeq.charAt(sOffset))
@@ -40,9 +40,9 @@ class CharAndExprEitherReader[E](charSource: Array[java.lang.CharSequence], eSou
         either
     }
     
-    def rest: CharAndExprEitherReader[E] = if (!atEnd) new CharAndExprEitherReader[E](charSource, eSource, offset + 1) else this
+    def rest: CharAndExprEitherReader[E] = drop(offset + 1)
     
-    def pos: Position = if (!atEnd) new CharAndExprEitherOffsetPosition(charSource, eSource, offset) else NoPosition
+    def pos: Position = new CharAndExprEitherOffsetPosition(charSource, eSource, offset)
     
     def atEnd: Boolean = offset >= length
     

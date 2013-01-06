@@ -24,9 +24,12 @@ trait CharAndExprEitherParsers[E] extends Parsers  {
     def EXPR = new Parser[E] {
         def apply(in: Input) = {
             val (sSource, sOffset) = in.asInstanceOf[CharAndExprEitherReader[E]].subSourceAndSubOffset
+//            println("--------------EXPR--------------")
+//            println(sSource)
+//            println(sOffset)
             sSource match {
                 case Left(cSeq) => 
-                    Failure("expr1` expected expr but found:\n" +  cSeq.subSequence(0, sOffset).toString + "\n------------------------------------------------------------", in.drop(cSeq.length))
+                    Failure("expected expr but found:\n" +  cSeq.subSequence(0, sOffset).toString + "\nEND", in)
                 case Right(ex) => 
                     Success(ex, in.drop(1))
             }
@@ -36,6 +39,10 @@ trait CharAndExprEitherParsers[E] extends Parsers  {
     implicit def literal(s: String): Parser[String] = new Parser[String] {
         def apply(in: Input) = {
             val (sSource, sOffset) = in.asInstanceOf[CharAndExprEitherReader[E]].subSourceAndSubOffset
+//            println("--------------literal--------------")
+//            println(s)
+//            println(sSource)
+//            println(sOffset)
             sSource match {
                 case Left(cSeq) => 
                     if (sOffset < cSeq.length) {
@@ -49,13 +56,13 @@ trait CharAndExprEitherParsers[E] extends Parsers  {
                         if (i == s.length)
                             Success(cSeq.subSequence(start, j).toString, in.drop(j - sOffset))
                         else  {
-                            val found = if (start == cSeq.length()) "end of source" else "`" + cSeq.charAt(start) + "'"
-                            Failure("1`" + s + "' expected but " + found + " found", in.drop(start - sOffset))
+                            val found = if (start == cSeq.length()) "end of source" else cSeq.charAt(start)
+                            Failure(s + " expected but " + found + " found", in.drop(start - sOffset))
                         }
                     } else
-                        Failure("2`" + s + "' expected but end of all sources reached", in)
+                        Failure(s + " expected but end of all sources reached", in.drop(cSeq.length - sOffset))
                 case Right(_) => 
-                    Failure("3`" + s + "' expected but expr found", in.drop(1))
+                    Failure(s + " expected but expr found", in)
             }
         }
     }
@@ -63,6 +70,10 @@ trait CharAndExprEitherParsers[E] extends Parsers  {
     implicit def regex(r: Regex): Parser[String] = new Parser[String] {
         def apply(in: Input) = {
             val (sSource, sOffset) = in.asInstanceOf[CharAndExprEitherReader[E]].subSourceAndSubOffset
+//            println("--------------regex--------------")
+//            println(""+r)
+//            println(sSource)
+//            println(sOffset)
             sSource match {
                 case Left(cSeq) => 
                     if (sOffset < cSeq.length) {
@@ -71,13 +82,13 @@ trait CharAndExprEitherParsers[E] extends Parsers  {
                             case Some(matched) =>
                                 Success(cSeq.subSequence(start, start + matched.end).toString, in.drop(start + matched.end - sOffset))
                             case None =>
-                                val found = if (start == cSeq.length()) "end of source" else "`" + cSeq.charAt(start) + "'"
-                                Failure("1string matching regex `" + r + "' expected but " + found + " found", in.drop(start - sOffset))
+                                val found = if (start == cSeq.length()) "end of source" else cSeq.charAt(start)
+                                Failure("string matching regex " + r + "' expected but \"" + found + "\" found", in.drop(start - sOffset))
                         }
                     } else
-                        Failure("2string matching regex `" + r + "' expected but end of all sources reached", in)
+                        Failure("string matching regex " + r + "' expected but end of all sources reached", in.drop(cSeq.length - sOffset))
                 case Right(_) => 
-                    Failure("3string matching regex `" + r + "' expected but expr found", in.drop(1))
+                    Failure("string matching regex " + r + "' expected but expr found", in)
             }
         }
     }

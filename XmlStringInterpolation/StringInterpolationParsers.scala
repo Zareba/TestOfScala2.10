@@ -5,7 +5,7 @@ class StringInterpolationParsers extends CharAndExprEitherParsers[Seq[Node]]  {
     
     val string = """[a-zA-Z-_#]+""".r
     
-    val noDoubleQuote = """[^\"]+""".r
+    val noDoubleQuote = """[^\"]*""".r
     
     
 //    def tag: Parser[Seq[Node]] = tagName ~ opt(attrs) ~ opt(content) ^^ {
@@ -16,7 +16,7 @@ class StringInterpolationParsers extends CharAndExprEitherParsers[Seq[Node]]  {
 //    }
     
     
-    def tag: Parser[Seq[Node]] = tagWithAttrsWithContent | tagWithAttrsWithoutContent | tagWithoutAttrsWithContent | tagWithAttrsWithContent
+    def tag: Parser[Seq[Node]] = tagWithAttrsWithContent | tagWithAttrsWithoutContent | tagWithoutAttrsWithContent | tagWithoutAttrsWithoutContent
    
     def tagWithoutAttrsWithoutContent: Parser[Seq[Node]] = tagName ^^ {
         case nameStr => new nElem(null, nameStr, Null, TopScope, true)
@@ -47,15 +47,19 @@ class StringInterpolationParsers extends CharAndExprEitherParsers[Seq[Node]]  {
         case nameStr => new UnprefixedAttribute(nameStr.toString, Text(""), Null)
     }
     
-    def attrName: Parser[String] = {EXPR | string} ^^ {
-        case Text(str) => str
-        case str => str.toString
-    }
+    def attrName: Parser[String] =
+        EXPR ^^ {
+            case Text(str) => str
+        } | string ^^ {
+            case str => str.toString
+        }
     
-    def attrValue: Parser[String] = {EXPR | "\"" ~> noDoubleQuote <~ "\"" | string} ^^ {
-        case Text(str) => str
-        case str => str.toString
-    }
+    def attrValue: Parser[String] = EXPR ^^ {
+            case Text(str) => str
+        } | "\"" ~> noDoubleQuote <~ "\"" | string ^^ {
+            case Text(str) => str
+            case str => str.toString
+        }
     
     def content: Parser[Seq[Node]] = "{" ~> rep(EXPR | "\"" ~> noDoubleQuote <~ "\"" | tag) <~ "}" ^^ {
         case lst => lst.map { el => 
