@@ -15,15 +15,17 @@ class XmlStringInterpolation(str: StringContext) {
                 val result = sip.parseAll(
                     sip.tag,
                     str.parts.toArray,
-                    args.map    {
+                    args.foldLeft(Array[Seq[Node]]())((acc, el) => acc :+ {el match {
                         case str: String => Text(str)
-                        case sn => sn
-                    }.toArray
+                        case sn => sn.asInstanceOf[Seq[Node]]
+                    }})
                 )
                 if (result.successful)
                     result.get
-                else
-                    Seq(Text("Something went wrong"))
+                else {
+                    println(result.toString)
+                    Seq(Text(""))
+                }
             } else
                 Seq(Text("Wrong types in expr's"))
         }
@@ -77,6 +79,7 @@ p.title {
     font-size: 3em;
 }
 """
+
 
     val xml = xml"""
         html {

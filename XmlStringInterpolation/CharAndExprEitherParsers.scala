@@ -26,7 +26,7 @@ trait CharAndExprEitherParsers[E] extends Parsers  {
             val (sSource, sOffset) = in.asInstanceOf[CharAndExprEitherReader[E]].subSourceAndSubOffset
             sSource match {
                 case Left(cSeq) => 
-                    Failure("expr1` expected expr but " +  cSeq + " found", in.drop(cSeq.length))
+                    Failure("expr1` expected expr but found:\n" +  cSeq.subSequence(0, sOffset).toString + "\n------------------------------------------------------------", in.drop(cSeq.length))
                 case Right(ex) => 
                     Success(ex, in.drop(1))
             }
@@ -81,10 +81,24 @@ trait CharAndExprEitherParsers[E] extends Parsers  {
             }
         }
     }
+        
+//    override def positioned[E <: Positional](p: => Parser[E]): Parser[E] = {
+//        val pp = super.positioned(p)
+//        new Parser[E] {
+//            def apply(in: Input) = {
+//                val (sSource, sOffset) = in.asInstanceOf[CharAndExprEitherReader[E]].subSourceAndSubOffset
+//                sSource match {
+//                    case Left(cSeq) => 
+//                        val start = handleWhiteSpace(cSeq, sOffset)
+//                        pp(in.drop(start - sOffset))
+//                    case Right(ex) => 
+//                        pp(in.drop(1))
+//                }
+//            }
+//        }
+//    }
     
-    
-    
-    
+//    override def phrase[T](p: Parser[T]): Parser[T] = super.phrase(p <~ opt("""\z""".r))
     
     def parse[T](p: Parser[T], in: CharAndExprEitherReader[E]): ParseResult[T] = p(in)
     
